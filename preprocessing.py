@@ -1,10 +1,12 @@
 import codecs
 import jieba
 import re
+import json
+import random
 from zhon.hanzi import punctuation
 import string
 
-FILENAME1 = './corpus.txt'
+FILENAME1 = './yelp_700K.json'
 FILENAME2 = './weixin_210K_reduced.json'
 OUTPUT1 = './output.txt'
 DIR = ''
@@ -22,9 +24,29 @@ def merge(dir):
 
     return contents
 
+#read yelp reviews and make corpus for w2v
+def read_yelp(filename):
+    contents = []
+
+    with codecs.open(filename, 'r', 'utf-8') as f:
+
+        i = 0
+
+        for line in f:
+            i += 1
+            if i <= 150000:
+                continue
+            review = json.loads(line)
+            text = review["text"]
+            text = text.lower().replace("\n", " ")
+            spaced = re.sub(r"[%s]+" % string.punctuation, " ", text)
+            contents.append(spaced)
+            if i % 5000 == 0:
+                print("lines processed: " + str(i))
+
+    print("Length of contents:", len(contents))
+    return contents
 def read_json(filename):
-    import json
-    import random
     contents = []
     count = 0
     with codecs.open(filename, 'r', 'utf-8') as f:
@@ -77,6 +99,7 @@ def split_word(filename):
                         and j not in punctuation:
                     temp.append(j)
             #print(temp)
+
             contents.append(" ".join(temp))
     return contents
     
@@ -92,7 +115,8 @@ def save(contents, filename, multiline_copy=False):
                 f_ml.write("%s\n" % line)
             
 if __name__ == "__main__":
-    contents = read_json(FILENAME2)
+    #contents = read_json(FILENAME2)
+    contents = read_yelp(FILENAME1)
     if len(contents) > 1:
         save(contents, OUTPUT1)
     else:
